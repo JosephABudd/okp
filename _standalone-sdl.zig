@@ -18,12 +18,12 @@ pub fn main() !void {
         .width = 500,
         .height = 600,
         .vsync = vsync,
-        .title = "GUI Standalone Example",
+        .title = "DVUI Standalone Example",
     });
     defer backend.deinit();
 
     // init dvui Window (maps onto a single OS window)
-    var win = try dvui.Window.init(@src(), 0, gpa, backend.guiBackend());
+    var win = try dvui.Window.init(@src(), 0, gpa, backend.backend());
     defer win.deinit();
 
     main_loop: while (true) {
@@ -41,7 +41,7 @@ pub fn main() !void {
         const quit = try backend.addAllEvents(&win);
         if (quit) break :main_loop;
 
-        try gui_frame();
+        try dvui_frame();
 
         // marks end of dvui frame, don't call dvui functions after this
         // - sends all dvui stuff to backend for rendering, must be called before renderPresent()
@@ -65,7 +65,7 @@ pub fn main() !void {
     }
 }
 
-fn gui_frame() !void {
+fn dvui_frame() !void {
     {
         var m = try dvui.menu(@src(), .horizontal, .{ .background = true, .expand = .horizontal });
         defer m.deinit();

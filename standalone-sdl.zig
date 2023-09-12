@@ -2,8 +2,8 @@ const std = @import("std");
 const dvui = @import("dvui");
 const SDLBackend = @import("SDLBackend");
 
-const frontend = @import("src/frontend/api.zig");
-const backend = @import("src/backend/api.zig");
+const frontend = @import("src/okp/frontend/api.zig");
+const backend = @import("src/okp/backend/api.zig");
 const channel = @import("channel");
 
 var gpa_instance = std.heap.GeneralPurposeAllocator(.{}){};

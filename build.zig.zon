@@ -1,10 +1,14 @@
 .{
-    .name = "gui-demo",
+    .name = "dvui",
     .version = "0.0.1",
     .dependencies = .{
-        .dvui = .{
-            .url = "https://github.com/david-vanderson/gui/archive/f38e254b314e0ed1b92ca17d21783fe24e96a21c.tar.gz",
-            .hash = "12201d34b6f7d5c8b8a70129db4c63ba22b717d375c00a775a4483d24161b9d0949f",
+        //.sdl = .{
+            //.url = "https://github.com/andrewrk/SDL/archive/73c38318443a98b80d7cd0cd1e18a190a85e842f.tar.gz",
+            //.hash = "12202047e83332d37477811513bd6446c567efa6f03c4ae5e57585412b4ad8129cae",
+        //},
+        .freetype = .{
+            .url = "https://github.com/david-vanderson/freetype/archive/18a1df5a3ef8afa0782c419b153a21e9e160335f.tar.gz",
+            .hash = "1220b305af272ac3026704b8d7e13740350daf59a6a95e45dedb428c55933e3df925",
         },
     },
 }

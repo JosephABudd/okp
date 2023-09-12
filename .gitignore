@@ -1,4 +1,3 @@
-zig-cache/
-zig-out/
-_dvui/
+zig-cache
+zig-out
 *.swp
