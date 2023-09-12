@@ -2,7 +2,7 @@
 
 One key piano.
 
-## Sep 23, 23
+## Sep 12, 23
 
 1. Added the dvui source code so I can play with it. I'm embarassed to say how long it took me to figure out how to do it. It was too easy.
 
