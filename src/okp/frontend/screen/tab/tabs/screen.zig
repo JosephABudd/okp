@@ -46,7 +46,6 @@ const Screen = struct {
     }
 
     fn frameFn(self_ptr: *anyopaque, arena: std.mem.Allocator) anyerror {
-        // dvui.currentWindow().debug_window_show = true;
         var self: *Screen = @alignCast(@ptrCast(self_ptr));
 
         // The tabbar.
