@@ -22,21 +22,21 @@ pub const Messenger = struct {
         var self: *Messenger = @alignCast(@ptrCast(self_ptr));
         _ = self;
         _ = message;
-        std.debug.print("{s} got the {s} message.\n", .{ "tabs", "initialize" });
+        std.debug.print("{s} got the {s} message.\n", .{ "htabs", "initialize" });
     }
 
     fn receiveAdd(self_ptr: *anyopaque, message: *_message_.add.Message) void {
         var self: *Messenger = @alignCast(@ptrCast(self_ptr));
         _ = self;
         _ = message;
-        std.debug.print("{s} got the {s} message.\n", .{ "tabs", "add" });
+        std.debug.print("{s} got the {s} message.\n", .{ "htabs", "add" });
     }
 
     fn receiveEdit(self_ptr: *anyopaque, message: *_message_.edit.Message) void {
         var self: *Messenger = @alignCast(@ptrCast(self_ptr));
         _ = self;
         _ = message;
-        std.debug.print("{s} got the {s} message.\n", .{ "tabs", "edit" });
+        std.debug.print("{s} got the {s} message.\n", .{ "htabs", "edit" });
     }
 };
 

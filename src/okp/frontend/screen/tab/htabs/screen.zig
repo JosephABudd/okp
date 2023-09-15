@@ -36,7 +36,7 @@ const Screen = struct {
     fn nameFn(self_ptr: *anyopaque) []const u8 {
         var self: *Screen = @alignCast(@ptrCast(self_ptr));
         _ = self;
-        return "tabs";
+        return "htabs";
     }
 
     fn deinitFn(self_ptr: *anyopaque) void {
@@ -58,7 +58,8 @@ const Screen = struct {
             },
             .{ .expand = .horizontal, .color_style = .window },
         );
-        var tabbar = try dvui.tabBar(@src(), .horizontal, .{ .background = true, .expand = .both });
+        var tabbar = try dvui.tabBar(@src(), .horizontal, .{ .background = true, .expand = .none });
+        // var tabbar = try dvui.tabBar(@src(), .horizontal, .{ .background = true, .expand = .both });
         var selected: bool = false;
 
         // The simple screen tab.

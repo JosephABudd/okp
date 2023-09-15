@@ -23,10 +23,17 @@ pub fn frame(all_screens: *_framers_.Group) !void {
             return;
         }
 
-        if (try dvui.menuItemLabel(@src(), "Tabs", .{}, .{}) != null) {
+        if (try dvui.menuItemLabel(@src(), "HTabs", .{}, .{}) != null) {
             m.close();
             m.deinit();
-            all_screens.setCurrent("tabs");
+            all_screens.setCurrent("htabs");
+            return;
+        }
+
+        if (try dvui.menuItemLabel(@src(), "VTabs", .{}, .{}) != null) {
+            m.close();
+            m.deinit();
+            all_screens.setCurrent("vtabs");
             return;
         }
 

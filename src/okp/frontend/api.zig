@@ -5,7 +5,8 @@ const _framers_ = @import("framers");
 
 const simple_screen = @import("screen/panel/simple/screen.zig");
 const hard_screen = @import("screen/panel/hard/screen.zig");
-const tabs_screen = @import("screen/tab/tabs/screen.zig");
+const htabs_screen = @import("screen/tab/htabs/screen.zig");
+const vtabs_screen = @import("screen/tab/vtabs/screen.zig");
 
 var all_screens: ?*_framers_.Group = null;
 
@@ -16,7 +17,8 @@ pub fn init(allocator: std.mem.Allocator, send_channel: *_channel_.Channels, rec
     // Set up each screen.
     try simple_screen.init(allocator, all_screens.?, send_channel, receive_channel);
     try hard_screen.init(allocator, all_screens.?, send_channel, receive_channel);
-    try tabs_screen.init(allocator, all_screens.?, send_channel, receive_channel);
+    try htabs_screen.init(allocator, all_screens.?, send_channel, receive_channel);
+    try vtabs_screen.init(allocator, all_screens.?, send_channel, receive_channel);
 
     // Set the default screen.
     all_screens.?.setCurrent("simple");
