@@ -43,7 +43,10 @@ pub fn main() !void {
     try backend.init(allocator, backToFront, frontToBack);
     defer backend.deinit();
 
+    var theme_set: bool = false;
+
     main_loop: while (true) {
+
         // Arena allocator for the front end.
         var arena_allocator = std.heap.ArenaAllocator.init(std.heap.page_allocator);
         defer arena_allocator.deinit();
@@ -54,6 +57,13 @@ pub fn main() !void {
 
         // marks the beginning of a frame for dvui, can call dvui functions after this
         try win.begin(arena, nstime);
+
+        // set the theme.
+        if (!theme_set) {
+            theme_set = true;
+            const dark_theme = &dvui.Adwaita.dark;
+            dvui.themeSet(dark_theme);
+        }
 
         // send all SDL events to dvui for processing
         const quit = try gui_backend.addAllEvents(&win);

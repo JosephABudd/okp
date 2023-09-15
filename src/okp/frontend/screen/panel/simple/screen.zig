@@ -31,7 +31,11 @@ const Screen = struct {
 
     fn frameFn(self_ptr: *anyopaque, arena: std.mem.Allocator) anyerror {
         var self: *Screen = @alignCast(@ptrCast(self_ptr));
-        var scroll = try dvui.scrollArea(@src(), .{}, .{ .expand = .both, .color_style = .window });
+        var scroll = try dvui.scrollArea(
+            @src(),
+            .{ .horizontal_bar = false },
+            .{ .expand = .both, .color_style = .window },
+        );
         defer scroll.deinit();
 
         try self.all_panels.frameCurrent(arena);

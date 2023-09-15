@@ -13,6 +13,11 @@ const tabs = enum {
     none,
 };
 
+const simple_screen_tab_label: []const u8 = "The Entire Simple Screen";
+const hard_screen_tab_label: []const u8 = "The Entire Hard Screen";
+const home_panel_tab_label: []const u8 = "Only the Tabs Home Panel";
+const other_panel_tab_label: []const u8 = "Only the Other Panel";
+
 const Screen = struct {
     allocator: std.mem.Allocator,
     all_screens: *_framers_.Group,
@@ -20,7 +25,8 @@ const Screen = struct {
     send_channels: *_channel_.Channels,
     receive_channels: *_channel_.Channels,
 
-    selected_tab: tabs,
+    selected_tab_label: []const u8 = undefined,
+    selected_tab: tabs = undefined,
 
     pub fn deinit(self: *Screen) void {
         self.all_panels.deinit();
@@ -40,37 +46,63 @@ const Screen = struct {
     }
 
     fn frameFn(self_ptr: *anyopaque, arena: std.mem.Allocator) anyerror {
+        dvui.currentWindow().debug_window_show = true;
         var self: *Screen = @alignCast(@ptrCast(self_ptr));
-        var accent_style = dvui.themeGet().style_content.accent orelse unreachable;
-        _ = accent_style;
 
         // The tabbar.
-        var tabbar = try dvui.menu(@src(), .horizontal, .{ .background = true, .expand = .horizontal });
+        var scroll = try dvui.scrollArea(
+            @src(),
+            .{
+                .vertical = .none,
+                .horizontal = .auto,
+                // .horizontal_bar = false,
+            },
+            .{ .expand = .horizontal, .color_style = .window },
+        );
+        var tabbar = try dvui.tabBar(@src(), .horizontal, .{ .background = true, .expand = .both });
+        var selected: bool = false;
 
         // The simple screen tab.
-        var simple_screen_tab: ?dvui.Rect = try dvui.menuItemLabel(@src(), "Simple Screen", .{}, .{});
+        selected = std.mem.eql(u8, self.selected_tab_label, simple_screen_tab_label);
+        var simple_screen_tab: ?dvui.Rect = try dvui.tabBarItemLabel(@src(), simple_screen_tab_label, .{ .selected = selected }, .{});
         if (simple_screen_tab != null) {
-            self.selected_tab = tabs.simple;
+            if (self.selected_tab != tabs.simple) {
+                self.selected_tab = tabs.simple;
+                self.selected_tab_label = simple_screen_tab_label;
+            }
         }
 
         // The hard screen tab.
-        var hard_screen_tab: ?dvui.Rect = try dvui.menuItemLabel(@src(), "Hard Screen", .{}, .{});
+        selected = std.mem.eql(u8, self.selected_tab_label, hard_screen_tab_label);
+        var hard_screen_tab: ?dvui.Rect = try dvui.tabBarItemLabel(@src(), hard_screen_tab_label, .{ .selected = selected }, .{});
         if (hard_screen_tab != null) {
-            self.selected_tab = tabs.hard;
+            if (self.selected_tab != tabs.hard) {
+                self.selected_tab = tabs.hard;
+                self.selected_tab_label = hard_screen_tab_label;
+            }
         }
 
         // The home panel tab.
-        var home_panel_tab: ?dvui.Rect = try dvui.menuItemLabel(@src(), "Tabs Home Panel", .{}, .{});
+        selected = std.mem.eql(u8, self.selected_tab_label, home_panel_tab_label);
+        var home_panel_tab: ?dvui.Rect = try dvui.tabBarItemLabel(@src(), home_panel_tab_label, .{ .selected = selected }, .{});
         if (home_panel_tab != null) {
-            self.selected_tab = tabs.home_panel;
+            if (self.selected_tab != tabs.home_panel) {
+                self.selected_tab = tabs.home_panel;
+                self.selected_tab_label = home_panel_tab_label;
+            }
         }
 
         // The other panel tab.
-        var other_panel_tab: ?dvui.Rect = try dvui.menuItemLabel(@src(), "Tabs Other Panel", .{}, .{});
+        selected = std.mem.eql(u8, self.selected_tab_label, other_panel_tab_label);
+        var other_panel_tab: ?dvui.Rect = try dvui.tabBarItemLabel(@src(), other_panel_tab_label, .{ .selected = selected }, .{});
         if (other_panel_tab != null) {
-            self.selected_tab = tabs.other_panel;
+            if (self.selected_tab != tabs.other_panel) {
+                self.selected_tab = tabs.other_panel;
+                self.selected_tab_label = other_panel_tab_label;
+            }
         }
         tabbar.deinit();
+        scroll.deinit();
 
         // The content area for a tab's content.
 
@@ -115,6 +147,7 @@ pub fn init(allocator: std.mem.Allocator, all_screens: *_framers_.Group, send_ch
 
     // The simple tab is selected by default.
     screen.selected_tab = tabs.simple;
+    screen.selected_tab_label = simple_screen_tab_label;
 
     // The messenger.
     var messenger: *_messenger_.Messenger = try _messenger_.init(allocator, all_screens, screen.all_panels, send_channels, receive_channels);
