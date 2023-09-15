@@ -2,6 +2,10 @@
 
 One key piano.
 
+## Sep 15, 23
+
+1. Added the vertical tab bar screen. So now there is a horizontal tab bar screen and a verticl tab bar screen.
+
 ## Sep 12, 23
 
 1. Added the dvui source code so I can play with it. I'm embarassed to say how long it took me to figure out how to do it. It was too easy.
