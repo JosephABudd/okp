@@ -28,6 +28,9 @@ const Screen = struct {
     selected_tab_label: []const u8 = undefined,
     selected_tab: tabs = undefined,
 
+    scroll_max: f32 = -1.0,
+    scroll_max_count: u8 = 0,
+
     pub fn deinit(self: *Screen) void {
         self.all_panels.deinit();
         self.allocator.destroy(self);
@@ -45,6 +48,22 @@ const Screen = struct {
         self.allocator.destroy(self);
     }
 
+    fn check_scroll_max(self: *Screen) bool {
+        if (self.scroll_max_count < 3) {
+            self.scroll_max = self.scroll.si.scroll_max(.horizontal);
+            self.scroll_max_count += 1;
+            return false;
+        }
+        var scroll_max: f32 = self.scroll.si.scroll_max(.horizontal);
+        if (scroll_max != self.scroll_max) {
+            // window size changed.
+            self.scroll_max = scroll_max;
+            self.scroll_max_count = 1;
+            return false;
+        }
+        return true;
+    }
+
     fn frameFn(self_ptr: *anyopaque, arena: std.mem.Allocator) anyerror {
         var self: *Screen = @alignCast(@ptrCast(self_ptr));
 
@@ -54,7 +73,7 @@ const Screen = struct {
             .{
                 .vertical = .none,
                 .horizontal = .auto,
-                // .horizontal_bar = false,
+                .horizontal_bar = .hide,
             },
             .{ .expand = .horizontal, .color_style = .window },
         );
@@ -103,6 +122,12 @@ const Screen = struct {
         }
         tabbar.deinit();
         scroll.deinit();
+
+        // if (scroll_max_count < 3) {
+        //     scroll_max = scroll.si.scroll_max(.horizontal);
+        //     scroll_max_count += 1;
+        // }
+        // std.debug.print("htabs max is {d}\n", .{max});
 
         // The content area for a tab's content.
 

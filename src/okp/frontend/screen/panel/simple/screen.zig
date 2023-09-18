@@ -33,7 +33,7 @@ const Screen = struct {
         var self: *Screen = @alignCast(@ptrCast(self_ptr));
         var scroll = try dvui.scrollArea(
             @src(),
-            .{ .horizontal_bar = false },
+            .{ .horizontal_bar = .hide },
             .{ .expand = .both, .color_style = .window },
         );
         defer scroll.deinit();

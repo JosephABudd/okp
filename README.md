@@ -2,6 +2,10 @@
 
 One key piano.
 
+## Sep 17, 23
+
+1. Updated to the new version of dvui.
+
 ## Sep 15, 23
 
 1. Added the vertical tab bar screen. So now there is a horizontal tab bar screen and a verticl tab bar screen.

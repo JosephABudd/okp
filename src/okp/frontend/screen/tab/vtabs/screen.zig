@@ -61,7 +61,7 @@ const Screen = struct {
                 .{
                     .horizontal = .none,
                     .vertical = .auto,
-                    // .horizontal_bar = false,
+                    .vertical_bar = .hide,
                 },
                 .{ .expand = .vertical, .color_style = .window },
             );

@@ -1,0 +1,335 @@
+
+// Tab bar.
+
+pub fn tabBar(src: std.builtin.SourceLocation, dir: Direction, opts: Options) !*TabBarWidget {
+    var ret = try currentWindow().arena.create(TabBarWidget);
+    ret.* = TabBarWidget.init(src, dir, opts);
+    try ret.install(.{});
+    return ret;
+}
+
+pub const TabBarWidget = struct {
+    const Self = @This();
+    pub var defaults: Options = .{
+        .color_style = .window,
+    };
+
+    wd: WidgetData = undefined,
+
+    winId: u32 = undefined,
+    dir: Direction = undefined,
+    box: BoxWidget = undefined,
+
+    mouse_over: bool = false,
+
+    pub fn init(src: std.builtin.SourceLocation, dir: Direction, opts: Options) TabBarWidget {
+        var self = Self{};
+        const options = defaults.override(opts);
+        self.wd = WidgetData.init(src, options);
+
+        self.winId = subwindowCurrentId();
+        self.dir = dir;
+
+        return self;
+    }
+
+    pub fn install(self: *Self, opts: struct {}) !void {
+        _ = opts;
+        _ = parentSet(self.widget());
+        try self.wd.register("TabBar", null);
+        try self.wd.borderAndBackground(.{});
+
+        var evts = events();
+        for (evts) |*e| {
+            if (!eventMatch(e, .{ .id = self.data().id, .r = self.data().borderRectScale().r }))
+                continue;
+
+            self.processEvent(e, false);
+        }
+
+        self.box = BoxWidget.init(@src(), self.dir, false, self.wd.options.strip().override(.{ .expand = .both }));
+        try self.box.install(.{});
+    }
+
+    pub fn close(self: *Self) void {
+        // bubble this event to close all popups that had subtabBars leading to this
+        var e = Event{ .evt = .{ .close_popup = .{} } };
+        self.processEvent(&e, true);
+        refresh();
+    }
+
+    pub fn widget(self: *Self) Widget {
+        return Widget.init(self, data, rectFor, screenRectScale, minSizeForChild, processEvent);
+    }
+
+    pub fn data(self: *Self) *WidgetData {
+        return &self.wd;
+    }
+
+    pub fn rectFor(self: *Self, id: u32, min_size: Size, e: Options.Expand, g: Options.Gravity) Rect {
+        return placeIn(self.wd.contentRect().justSize(), minSize(id, min_size), e, g);
+    }
+
+    pub fn screenRectScale(self: *Self, rect: Rect) RectScale {
+        return self.wd.contentRectScale().rectToScreen(rect);
+    }
+
+    pub fn minSizeForChild(self: *Self, s: Size) void {
+        self.wd.minSizeMax(self.wd.padSize(s));
+    }
+
+    pub fn processEvent(self: *Self, e: *Event, bubbling: bool) void {
+        _ = bubbling;
+        switch (e.evt) {
+            .mouse => |me| {
+                if (me.kind == .position) {
+                    // TODO: set this event to handled if there is an existing subtabBar and motion is towards the popup
+                    if (mouseTotalMotion().nonZero()) {
+                        self.mouse_over = true;
+                    }
+                }
+            },
+            else => {},
+        }
+
+        if (e.bubbleable()) {
+            // self.wd.parent.processEvent(e, false);
+            self.wd.parent.processEvent(e, true);
+        }
+    }
+
+    pub fn deinit(self: *Self) void {
+        self.box.deinit();
+        self.wd.minSizeSetAndRefresh();
+        self.wd.minSizeReportToParent();
+        _ = parentSet(self.wd.parent);
+    }
+};
+
+pub fn tabBarItemLabel(src: std.builtin.SourceLocation, label_str: []const u8, init_opts: TabBarItemWidget.InitOptions, opts: Options) !?Rect {
+    var tbi = try tabBarItem(src, init_opts, opts);
+
+    var labelopts = opts.strip();
+
+    var ret: ?Rect = null;
+    if (tbi.activeRect()) |r| {
+        ret = r;
+    }
+
+    if (tbi.show_active) {
+        labelopts = labelopts.override(.{ .color_style = .accent });
+    }
+
+    try labelNoFmt(@src(), label_str, labelopts);
+
+    tbi.deinit();
+
+    return ret;
+}
+
+pub fn tabBarItemIcon(src: std.builtin.SourceLocation, name: []const u8, tvg_bytes: []const u8, init_opts: TabBarItemWidget.InitOptions, opts: Options) !?Rect {
+    var mi = try tabBarItem(src, init_opts, opts);
+
+    var iconopts = opts.strip();
+
+    var ret: ?Rect = null;
+    if (mi.activeRect()) |r| {
+        ret = r;
+    }
+
+    if (mi.show_active) {
+        iconopts = iconopts.override(.{ .color_style = .accent });
+    }
+
+    try icon(@src(), name, tvg_bytes, iconopts);
+
+    mi.deinit();
+
+    return ret;
+}
+
+pub fn tabBarItem(src: std.builtin.SourceLocation, init_opts: TabBarItemWidget.InitOptions, opts: Options) !*TabBarItemWidget {
+    var ret = try currentWindow().arena.create(TabBarItemWidget);
+    ret.* = TabBarItemWidget.init(src, init_opts, opts);
+    try ret.install(.{});
+    return ret;
+}
+
+pub const TabBarItemWidget = struct {
+    const Self = @This();
+    pub var defaults: Options = .{
+        .color_style = .content,
+        .corner_radius = Rect.all(5),
+        .padding = Rect.all(4),
+        .expand = .horizontal,
+    };
+
+    pub const InitOptions = struct {
+        selected: bool = false,
+        focus_on_hover: bool = true,
+    };
+
+    wd: WidgetData = undefined,
+    highlight: bool = false,
+    init_opts: InitOptions = undefined,
+    activated: bool = false,
+    show_active: bool = false,
+    mouse_over: bool = false,
+
+    pub fn init(src: std.builtin.SourceLocation, init_opts: InitOptions, opts: Options) Self {
+        var self = Self{};
+        const options = defaults.override(opts);
+        self.wd = WidgetData.init(src, options);
+        self.init_opts = init_opts;
+        self.show_active = init_opts.selected;
+        return self;
+    }
+
+    pub fn install(self: *Self, opts: struct { process_events: bool = true, focus_as_outline: bool = true }) !void {
+        try self.wd.register("TabBarItem", null);
+
+        if (self.wd.visible()) {
+            try tabIndexSet(self.wd.id, self.wd.options.tab_index);
+        }
+
+        if (opts.process_events) {
+            var evts = events();
+            for (evts) |*e| {
+                if (eventMatch(e, .{ .id = self.data().id, .r = self.data().borderRectScale().r })) {
+                    self.processEvent(e, false);
+                }
+            }
+        }
+
+        try self.wd.borderAndBackground(.{});
+
+        var focused: bool = false;
+        if (!self.show_active) {
+            if (self.wd.id == focusedWidgetId()) {
+                focused = true;
+            } else if (self.wd.id == focusedWidgetIdInCurrentSubwindow() and self.highlight) {
+                focused = true;
+            }
+            if (focused) {
+                if (self.mouse_over) {
+                    self.show_active = true;
+                    try self.wd.focusBorder();
+                    _ = parentSet(self.widget());
+                    return;
+                } else {
+                    focused = false;
+                    self.show_active = false;
+                    focusWidget(null, null);
+                }
+            }
+        } else {
+            // self.activated == true;
+            // self.show_active = true;
+            const rs = self.wd.backgroundRectScale();
+            try pathAddRect(rs.r, self.wd.options.corner_radiusGet().scale(rs.s));
+            try pathFillConvex(self.wd.options.color(.accent));
+            _ = parentSet(self.widget());
+            return;
+        }
+
+        // self.show_active == false.
+        if ((self.wd.id == focusedWidgetIdInCurrentSubwindow()) or self.highlight) {
+            const rs = self.wd.backgroundRectScale();
+            try pathAddRect(rs.r, self.wd.options.corner_radiusGet().scale(rs.s));
+            try pathFillConvex(self.wd.options.color(.hover));
+        } else if (self.wd.options.backgroundGet()) {
+            const rs = self.wd.backgroundRectScale();
+            try pathAddRect(rs.r, self.wd.options.corner_radiusGet().scale(rs.s));
+            try pathFillConvex(self.wd.options.color(.fill));
+        }
+        _ = parentSet(self.widget());
+    }
+
+    pub fn activeRect(self: *const Self) ?Rect {
+        if (self.activated) {
+            const rs = self.wd.backgroundRectScale();
+            return rs.r.scale(1 / windowNaturalScale());
+        } else {
+            return null;
+        }
+    }
+
+    pub fn widget(self: *Self) Widget {
+        return Widget.init(self, data, rectFor, screenRectScale, minSizeForChild, processEvent);
+    }
+
+    pub fn data(self: *Self) *WidgetData {
+        return &self.wd;
+    }
+
+    pub fn rectFor(self: *Self, id: u32, min_size: Size, e: Options.Expand, g: Options.Gravity) Rect {
+        return placeIn(self.wd.contentRect().justSize(), minSize(id, min_size), e, g);
+    }
+
+    pub fn screenRectScale(self: *Self, rect: Rect) RectScale {
+        return self.wd.contentRectScale().rectToScreen(rect);
+    }
+
+    pub fn minSizeForChild(self: *Self, s: Size) void {
+        self.wd.minSizeMax(self.wd.padSize(s));
+    }
+
+    pub fn processEvent(self: *Self, e: *Event, bubbling: bool) void {
+        _ = bubbling;
+        var focused: bool = false;
+        var focused_id: u32 = 0;
+        if (focusedWidgetIdInCurrentSubwindow()) |_focused_id| {
+            focused = self.wd.id == _focused_id;
+            focused_id = _focused_id;
+        }
+        switch (e.evt) {
+            .mouse => |me| {
+                if (me.kind == .focus) {
+                    e.handled = true;
+                    // if (!self.activated) {
+                    focusSubwindow(null, null); // focuses the window we are in
+                    focusWidget(self.wd.id, e.num);
+                    // }
+                } else if (me.kind == .press and me.kind.press == .left) {
+                    e.handled = true;
+                } else if (me.kind == .release) {
+                    e.handled = true;
+                    self.activated = true;
+                    refresh();
+                } else if (me.kind == .position) {
+                    e.handled = true;
+
+                    // We get a .position mouse event every frame.  If we
+                    // focus the tabBar item under the mouse even if it's not
+                    // moving then it breaks keyboard navigation.
+                    if (mouseTotalMotion().nonZero()) {
+                        self.highlight = true;
+                        self.mouse_over = true;
+                    }
+                } else {}
+            },
+            .key => |ke| {
+                if (ke.code == .space and ke.action == .down) {
+                    e.handled = true;
+                    if (!self.activated) {
+                        self.activated = true;
+                        refresh();
+                    }
+                } else if (ke.code == .right and ke.action == .down) {
+                    e.handled = true;
+                }
+            },
+            else => {},
+        }
+
+        if (e.bubbleable()) {
+            self.wd.parent.processEvent(e, true);
+        }
+    }
+
+    pub fn deinit(self: *Self) void {
+        self.wd.minSizeSetAndRefresh();
+        self.wd.minSizeReportToParent();
+        _ = parentSet(self.wd.parent);
+    }
+};

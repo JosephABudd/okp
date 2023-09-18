@@ -12,31 +12,34 @@ pub fn main() !void {
         .vsync = false,
         .title = "DVUI SDL test",
     });
+    win_backend.log_events = false;
     defer win_backend.deinit();
 
     var win = try dvui.Window.init(@src(), 0, gpa, win_backend.backend());
+    win.content_scale = win_backend.initial_scale;
     defer win.deinit();
 
     const winSize = win_backend.windowSize();
     const pxSize = win_backend.pixelSize();
-    std.debug.print("initial window logical {} pixels {} natural scale {d}\n", .{ winSize, pxSize, pxSize.w / winSize.w });
+    std.debug.print("initial window logical {} pixels {} natural scale {d} initial content scale {d}\n", .{ winSize, pxSize, pxSize.w / winSize.w, win_backend.initial_scale });
 
     var buttons: [3][6]bool = undefined;
     for (&buttons) |*b| {
         b.* = [_]bool{true} ** 6;
     }
 
-    var maxz: usize = 20;
     var floats: [6]bool = [_]bool{false} ** 6;
     var scale_val: f32 = 1.0;
     var scale_mod: dvui.enums.Mod = .none;
+    var dropdown_choice: usize = 1;
 
     //var rng = std.rand.DefaultPrng.init(0);
 
+    var arena_allocator = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    const arena = arena_allocator.allocator();
+
     main_loop: while (true) {
-        var arena_allocator = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-        defer arena_allocator.deinit();
-        const arena = arena_allocator.allocator();
+        defer _ = arena_allocator.reset(.free_all);
 
         var nstime = win.beginWait(win_backend.hasEvent());
         try win.begin(arena, nstime);
@@ -47,14 +50,11 @@ pub fn main() !void {
 
         _ = try dvui.examples.demo();
 
-        var window_box = try dvui.box(@src(), .vertical, .{ .expand = .both, .color_style = .window, .background = true });
-
         {
-            const oo = dvui.Options{ .expand = .both };
-            var overlay = try dvui.overlay(@src(), oo);
+            var overlay = try dvui.overlay(@src(), .{ .expand = .both });
             defer overlay.deinit();
 
-            const scale = try dvui.scale(@src(), scale_val, oo);
+            const scale = try dvui.scale(@src(), scale_val, .{ .expand = .both });
             defer {
                 var evts = dvui.events();
                 for (evts) |*e| {
@@ -71,10 +71,10 @@ pub fn main() !void {
 
                     switch (e.evt) {
                         .mouse => |me| {
-                            if (me.kind == .wheel_y and scale_mod.ctrl()) {
+                            if (me.action == .wheel_y and scale_mod.ctrl()) {
                                 e.handled = true;
                                 var base: f32 = 1.01;
-                                const zs = @exp(@log(base) * me.kind.wheel_y);
+                                const zs = @exp(@log(base) * me.data.wheel_y);
                                 if (zs != 1.0) {
                                     scale_val *= zs;
                                     dvui.refresh();
@@ -88,7 +88,7 @@ pub fn main() !void {
                 scale.deinit();
             }
 
-            const context = try dvui.context(@src(), oo);
+            const context = try dvui.context(@src(), .{ .expand = .both });
             defer context.deinit();
 
             if (context.activePoint()) |cp| {
@@ -104,87 +104,29 @@ pub fn main() !void {
             }
 
             {
-                var layout = try dvui.box(@src(), .vertical, .{});
-                defer layout.deinit();
-
-                //{
-                //  //const e2 = dvui.Expand(.horizontal);
-                //  //defer _ = dvui.Expand(e2);
-
-                //  var margin = dvui.Margin(dvui.Rect{.x = 20, .y = 20, .w = 20, .h = 20});
-                //  defer _ = dvui.Margin(margin);
-
-                //  var box = dvui.Box(@src(), .horizontal);
-                //  defer box.deinit();
-                //
-                //  for (buttons) |*buttoncol, k| {
-                //    if (k != 0) {
-                //      dvui.Spacer(@src(), k, 6);
-                //    }
-                //    if (buttoncol[0]) {
-                //      var margin2 = dvui.Margin(dvui.Rect{.x = 4, .y = 4, .w = 4, .h = 4});
-                //      defer _ = dvui.Margin(margin2);
-
-                //      var box2 = dvui.Box(@src(), k, .vertical);
-                //      defer box2.deinit();
-
-                //      for (buttoncol) |b, i| {
-                //        if (b) {
-                //          if (i != 0) {
-                //            dvui.Spacer(@src(), i, 6);
-                //            //dvui.Label(@src(), i, "Label", .{});
-                //          }
-                //          var buf: [100:0]u8 = undefined;
-                //          if (k == 0) {
-                //            _ = std.fmt.bufPrintZ(&buf, "HELLO {d}", .{i}) catch unreachable;
-                //          }
-                //          else if (k == 1) {
-                //            _ = std.fmt.bufPrintZ(&buf, "middle {d}", .{i}) catch unreachable;
-                //          }
-                //          else {
-                //            _ = std.fmt.bufPrintZ(&buf, "bye {d}", .{i}) catch unreachable;
-                //          }
-                //          if (dvui.Button(@src(), i, &buf)) {
-                //            if (i == 0) {
-                //              buttoncol[0] = false;
-                //            }
-                //            else if (i == 5) {
-                //              buttons[k+1][0] = true;
-                //            }
-                //            else if (i % 2 == 0) {
-                //              std.debug.print("Adding {d}\n", .{i + 1});
-                //              buttoncol[i+1] = true;
-                //            }
-                //            else {
-                //              std.debug.print("Removing {d}\n", .{i});
-                //              buttoncol[i] = false;
-                //            }
-                //          }
-                //        }
-                //      }
-                //    }
-                //  }
-                //}
+                var win_scroll = try dvui.scrollArea(@src(), .{}, .{ .expand = .both, .color_style = .window });
+                defer win_scroll.deinit();
 
                 {
-                    var scroll = try dvui.scrollArea(@src(), .{}, .{ .min_size_content = .{ .w = 50, .h = 100 } });
-                    defer scroll.deinit();
+                    const entries = [_][]const u8{
+                        "First 1",
+                        "First 2",
+                        "First 3",
+                        "First 4",
+                        "First 5",
+                        "Second 1",
+                        "Second 2",
+                        "Second 3",
+                        "Second 4",
+                        "Second 5",
+                        "Third 1",
+                        "Third 2",
+                        "Third 3",
+                        "Third 4",
+                        "Third 5",
+                    };
 
-                    var vbox = try dvui.box(@src(), .vertical, .{ .expand = .both });
-                    defer vbox.deinit();
-
-                    var buf: [100]u8 = undefined;
-                    var z: usize = 0;
-                    while (z < maxz) : (z += 1) {
-                        const buf_slice = std.fmt.bufPrint(&buf, "Button {d:0>2}", .{z}) catch unreachable;
-                        if (try dvui.button(@src(), buf_slice, .{ .id_extra = z, .gravity_x = 0.5, .gravity_y = 1.0 })) {
-                            if (z % 2 == 0) {
-                                maxz += 1;
-                            } else {
-                                maxz -= 1;
-                            }
-                        }
-                    }
+                    _ = try dvui.dropdown(@src(), &entries, &dropdown_choice, .{ .min_size_content = .{ .w = 120 } });
                 }
 
                 {
@@ -198,7 +140,8 @@ pub fn main() !void {
                 }
 
                 {
-                    try dvui.label(@src(), "content_scale {d}", .{win.content_scale}, .{});
+                    var box = try dvui.box(@src(), .horizontal, .{});
+                    defer box.deinit();
 
                     if (try dvui.button(@src(), "content_scale + .1", .{})) {
                         win.content_scale += 0.1;
@@ -207,17 +150,11 @@ pub fn main() !void {
                     if (try dvui.button(@src(), "content_scale - .1", .{})) {
                         win.content_scale -= 0.1;
                     }
+
+                    try dvui.label(@src(), "content_scale {d}", .{win.content_scale}, .{});
                 }
 
                 {
-                    var box = try dvui.box(@src(), .horizontal, .{});
-
-                    _ = try dvui.button(@src(), "Accent", .{ .color_style = .accent });
-                    _ = try dvui.button(@src(), "Success", .{ .color_style = .success });
-                    _ = try dvui.button(@src(), "Error", .{ .color_style = .err });
-
-                    box.deinit();
-
                     try dvui.label(@src(), "Theme: {s}", .{dvui.themeGet().name}, .{});
 
                     if (try dvui.button(@src(), "Toggle Theme", .{})) {
@@ -262,18 +199,10 @@ pub fn main() !void {
                             Sel.sel.decCursor();
                         }
                     }
-                    var scroll = try dvui.scrollArea(@src(), .{ .horizontal = .auto }, .{ .min_size_content = .{ .w = 150, .h = 100 } });
-                    var tl = try dvui.textLayout(@src(), .{ .selection = &Sel.sel, .break_lines = false }, .{ .expand = .both });
-                    {
-                        //if (try dvui.button(@src(), "Win Up .1", .{})) {
-                        //    fwin.wd.rect.y -= 0.1;
-                        //}
-                        //if (try dvui.button(@src(), "Win Down .1", .{ .gravity_x = 1.0 })) {
-                        //    fwin.wd.rect.y += 0.1;
-                        //}
-                    }
+                    var scroll = try dvui.scrollArea(@src(), .{ .horizontal = .auto }, .{ .min_size_content = .{ .w = 150, .h = 100 }, .margin = dvui.Rect.all(4) });
+                    var tl = try dvui.textLayout(@src(), .{ .selection = &Sel.sel, .break_lines = false }, .{});
                     const lorem =
-                        \\Lorem ipsum dolor sit amet, consectetur adipiscing elit,
+                        \\Lorem € ipsum dolor sit amet, consectetur adipiscing elit,
                         \\sed do eiusmod tempor incididunt ut labore et dolore
                         \\magna aliqua. Ut enim ad minim veniam, quis nostrud
                         \\exercitation ullamco laboris nisi ut aliquip ex ea
@@ -284,123 +213,112 @@ pub fn main() !void {
                         \\deserunt mollit anim id est laborum."
                     ;
                     try tl.addText(lorem, .{});
+                    try tl.addTextDone(.{});
+                    tl.deinit();
+                    scroll.deinit();
+                }
+            }
+
+            const fps = dvui.FPS();
+            try dvui.label(@src(), "fps {d:4.2}", .{fps}, .{ .gravity_x = 1.0 });
+
+            {
+                const FloatingWindowTest = struct {
+                    var show: bool = false;
+                    var rect = dvui.Rect{ .x = 300, .y = 200, .w = 300, .h = 200 };
+                };
+
+                var start_closing: bool = false;
+
+                if (try dvui.button(@src(), "Floating Window", .{ .gravity_x = 1.0, .gravity_y = 1.0, .margin = dvui.Rect.all(10) })) {
+                    if (FloatingWindowTest.show) {
+                        start_closing = true;
+                    } else {
+                        FloatingWindowTest.show = true;
+                    }
+                }
+
+                if (FloatingWindowTest.show) {
+                    var fwin = animatingWindow(@src(), false, &FloatingWindowTest.rect, &FloatingWindowTest.show, start_closing, .{});
+                    //var fwin = dvui.FloatingWindowWidget.init(@src(), false, &FloatingWindowTest.rect, &FloatingWindowTest.show, .{});
+
+                    try fwin.install(.{});
+                    defer fwin.deinit();
+                    try dvui.labelNoFmt(@src(), "Floating Window", .{ .gravity_x = 0.5, .gravity_y = 0.5 });
+
+                    try dvui.label(@src(), "Pretty Cool", .{}, .{ .font = .{ .name = "VeraMono", .ttf_bytes = dvui.fonts.bitstream_vera.VeraMono, .size = 20 } });
+
+                    if (try dvui.button(@src(), "button", .{})) {
+                        floats[0] = true;
+                    }
+
+                    for (&floats, 0..) |*f, fi| {
+                        if (f.*) {
+                            const modal = if (fi % 2 == 0) true else false;
+                            var name: []const u8 = "";
+                            if (modal) {
+                                name = "Modal";
+                            }
+                            var buf = std.mem.zeroes([100]u8);
+                            var buf_slice = std.fmt.bufPrintZ(&buf, "{d} {s} Dialog", .{ fi, name }) catch unreachable;
+                            var fw2 = try dvui.floatingWindow(@src(), .{ .modal = modal, .open_flag = f }, .{ .id_extra = fi, .color_style = .window, .min_size_content = .{ .w = 150, .h = 100 } });
+                            defer fw2.deinit();
+                            try dvui.labelNoFmt(@src(), buf_slice, .{ .gravity_x = 0.5, .gravity_y = 0.5 });
+
+                            try dvui.label(@src(), "Asking a Question", .{}, .{});
+
+                            const oo = dvui.Options{ .margin = dvui.Rect.all(4), .expand = .horizontal };
+                            var box = try dvui.box(@src(), .horizontal, oo);
+
+                            if (try dvui.button(@src(), "Yes", oo)) {
+                                std.debug.print("Yes {d}\n", .{fi});
+                                floats[fi + 1] = true;
+                            }
+
+                            if (try dvui.button(@src(), "No", oo)) {
+                                std.debug.print("No {d}\n", .{fi});
+                                fw2.close();
+                            }
+
+                            box.deinit();
+                        }
+                    }
+
+                    var scroll = try dvui.scrollArea(@src(), .{}, .{ .expand = .both });
+                    defer scroll.deinit();
+                    var tl = dvui.TextLayoutWidget.init(@src(), .{}, .{ .expand = .horizontal });
+                    try tl.install(.{ .process_events = false });
+                    {
+                        if (try dvui.button(@src(), "Win Up .1", .{})) {
+                            fwin.wd.rect.y -= 0.1;
+                        }
+                        if (try dvui.button(@src(), "Win Down .1", .{ .gravity_x = 1.0 })) {
+                            fwin.wd.rect.y += 0.1;
+                        }
+                    }
+                    tl.processEvents();
+                    const lorem = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
                     //const lorem = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore";
-                    //try tl.addText(Sel.text, .{});
+                    try tl.addText(lorem, .{});
                     //var it = std.mem.split(u8, lorem, " ");
                     //while (it.next()) |word| {
                     //  tl.addText(word);
                     //  tl.addText(" ");
                     //}
-                    try tl.addTextDone(.{});
                     tl.deinit();
-                    scroll.deinit();
-
-                    try dvui.textEntry(@src(), .{ .text = &Sel.buf, .scroll_horizontal = false }, .{ .min_size_content = .{ .w = 150, .h = 130 } });
                 }
-            }
-
-            const fps = dvui.FPS();
-            //std.debug.print("fps {d}\n", .{@round(fps)});
-            //dvui.render_text = true;
-            try dvui.label(@src(), "fps {d:4.2}", .{fps}, .{ .gravity_x = 1.0 });
-            //dvui.render_text = false;
-        }
-
-        {
-            const FloatingWindowTest = struct {
-                var show: bool = false;
-                var rect = dvui.Rect{ .x = 300, .y = 200, .w = 300, .h = 200 };
-            };
-
-            var start_closing: bool = false;
-
-            if (try dvui.button(@src(), "Floating Window", .{})) {
-                if (FloatingWindowTest.show) {
-                    start_closing = true;
-                } else {
-                    FloatingWindowTest.show = true;
-                }
-            }
-
-            if (FloatingWindowTest.show) {
-                var fwin = animatingWindow(@src(), false, &FloatingWindowTest.rect, &FloatingWindowTest.show, start_closing, .{});
-                //var fwin = dvui.FloatingWindowWidget.init(@src(), false, &FloatingWindowTest.rect, &FloatingWindowTest.show, .{});
-
-                try fwin.install(.{});
-                defer fwin.deinit();
-                try dvui.labelNoFmt(@src(), "Floating Window", .{ .gravity_x = 0.5, .gravity_y = 0.5 });
-
-                try dvui.label(@src(), "Pretty Cool", .{}, .{ .font = .{ .name = "VeraMono", .ttf_bytes = dvui.fonts.bitstream_vera.VeraMono, .size = 20 } });
-
-                if (try dvui.button(@src(), "button", .{})) {
-                    floats[0] = true;
-                }
-
-                for (&floats, 0..) |*f, fi| {
-                    if (f.*) {
-                        const modal = if (fi % 2 == 0) true else false;
-                        var name: []const u8 = "";
-                        if (modal) {
-                            name = "Modal";
-                        }
-                        var buf = std.mem.zeroes([100]u8);
-                        var buf_slice = std.fmt.bufPrintZ(&buf, "{d} {s} Dialog", .{ fi, name }) catch unreachable;
-                        var fw2 = try dvui.floatingWindow(@src(), .{ .modal = modal, .open_flag = f }, .{ .id_extra = fi, .color_style = .window, .min_size_content = .{ .w = 150, .h = 100 } });
-                        defer fw2.deinit();
-                        try dvui.labelNoFmt(@src(), buf_slice, .{ .gravity_x = 0.5, .gravity_y = 0.5 });
-
-                        try dvui.label(@src(), "Asking a Question", .{}, .{});
-
-                        const oo = dvui.Options{ .margin = dvui.Rect.all(4), .expand = .horizontal };
-                        var box = try dvui.box(@src(), .horizontal, oo);
-
-                        if (try dvui.button(@src(), "Yes", oo)) {
-                            std.debug.print("Yes {d}\n", .{fi});
-                            floats[fi + 1] = true;
-                        }
-
-                        if (try dvui.button(@src(), "No", oo)) {
-                            std.debug.print("No {d}\n", .{fi});
-                            fw2.close();
-                        }
-
-                        box.deinit();
-                    }
-                }
-
-                var scroll = try dvui.scrollArea(@src(), .{}, .{ .expand = .both });
-                defer scroll.deinit();
-                var tl = dvui.TextLayoutWidget.init(@src(), .{}, .{ .expand = .both });
-                try tl.install(.{ .process_events = false });
-                {
-                    if (try dvui.button(@src(), "Win Up .1", .{})) {
-                        fwin.wd.rect.y -= 0.1;
-                    }
-                    if (try dvui.button(@src(), "Win Down .1", .{ .gravity_x = 1.0 })) {
-                        fwin.wd.rect.y += 0.1;
-                    }
-                }
-                tl.processEvents();
-                const lorem = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
-                //const lorem = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore";
-                try tl.addText(lorem, .{});
-                //var it = std.mem.split(u8, lorem, " ");
-                //while (it.next()) |word| {
-                //  tl.addText(word);
-                //  tl.addText(" ");
-                //}
-                tl.deinit();
             }
         }
 
-        window_box.deinit();
+        //window_box.deinit();
+        //var window_box = try dvui.box(@src(), .vertical, .{ .expand = .both, .color_style = .window, .background = true });
 
         //var mx: c_int = 0;
         //var my: c_int = 0;
         //_ = SDLBackend.c.SDL_GetMouseState(&mx, &my);
         //try dvui.icon(@src(), "mouse", dvui.icons.papirus.actions.application_menu_symbolic, .{ .rect = dvui.Rect{ .x = @intToFloat(f32, mx), .y = @intToFloat(f32, my), .w = 10, .h = 10 } });
 
-        const end_micros = try win.end(.{ .show_toasts = false });
+        const end_micros = try win.end(.{});
 
         win_backend.setCursor(win.cursorRequested());
 
@@ -476,7 +394,7 @@ pub const StrokeTest = struct {
     wd: dvui.WidgetData = undefined,
 
     pub fn install(self: *Self, src: std.builtin.SourceLocation, options: dvui.Options) !void {
-        self.wd = dvui.WidgetData.init(src, options);
+        self.wd = dvui.WidgetData.init(src, .{}, options);
         dvui.debug("{x} StrokeTest {}", .{ self.wd.id, self.wd.rect });
 
         _ = dvui.captureMouseMaintain(self.wd.id);
@@ -544,10 +462,10 @@ pub const StrokeTest = struct {
         switch (e.evt) {
             .mouse => |me| {
                 const rs = self.wd.contentRectScale();
-                const mp = me.p.inRectScale(rs);
-                switch (me.kind) {
-                    .press => |button| {
-                        if (button == .left) {
+                const mp = rs.pointFromScreen(me.p);
+                switch (me.action) {
+                    .press => {
+                        if (me.button == .left) {
                             e.handled = true;
                             dragi = null;
 
@@ -571,8 +489,8 @@ pub const StrokeTest = struct {
                             }
                         }
                     },
-                    .release => |button| {
-                        if (button == .left) {
+                    .release => {
+                        if (me.button == .left) {
                             e.handled = true;
                             _ = dvui.captureMouse(null);
                             dvui.dragEnd();
@@ -587,10 +505,10 @@ pub const StrokeTest = struct {
                             dvui.refresh();
                         }
                     },
-                    .wheel_y => |ticks| {
+                    .wheel_y => {
                         e.handled = true;
                         var base: f32 = 1.05;
-                        const zs = @exp(@log(base) * ticks);
+                        const zs = @exp(@log(base) * me.data.wheel_y);
                         if (zs != 1.0) {
                             thickness *= zs;
                             dvui.refresh();

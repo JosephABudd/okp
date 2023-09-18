@@ -1,4 +1,83 @@
-scroll.install:        self.grabRect:Rect{ 0 21 431.7789306640625 10 }
-scroll.install: self.grabContactRect:Rect{ 0 21 500 10 }
-                                           x y  w   y
+ScrollInfo.scroll_max(self: ScrollInfo, dir: Direction) f32
+returns the max scroll
 
+ScrollAreaWidget.
+    si: *ScrollInfo = undefined,
+    si_store: ScrollInfo = .{},
+
+pub fn scrollArea(src: std.builtin.SourceLocation, init_opts: ScrollAreaWidget.InitOpts, opts: Options) !*ScrollAreaWidget {
+
+example:
+        // 1. Start the scroll area.
+
+        var scrollArea = try dvui.scrollArea(
+            @src(),
+            .{
+                .vertical = .none,
+                .horizontal = .auto,
+                // .horizontal_bar = false,
+            },
+            .{ .expand = .horizontal, .color_style = .window },
+        );
+
+        // 2. Add the rects to scroll.
+
+        // The simple screen tab.
+        selected = std.mem.eql(u8, self.selected_tab_label, simple_screen_tab_label);
+        var simple_screen_tab: ?dvui.Rect = try dvui.tabBarItemLabel(@src(), simple_screen_tab_label, .{ .selected = selected }, .{});
+        if (simple_screen_tab != null) {
+            if (self.selected_tab != tabs.simple) {
+                self.selected_tab = tabs.simple;
+                self.selected_tab_label = simple_screen_tab_label;
+            }
+        }
+
+        // The hard screen tab.
+        selected = std.mem.eql(u8, self.selected_tab_label, hard_screen_tab_label);
+        var hard_screen_tab: ?dvui.Rect = try dvui.tabBarItemLabel(@src(), hard_screen_tab_label, .{ .selected = selected }, .{});
+        if (hard_screen_tab != null) {
+            if (self.selected_tab != tabs.hard) {
+                self.selected_tab = tabs.hard;
+                self.selected_tab_label = hard_screen_tab_label;
+            }
+        }
+
+        // The home panel tab.
+        selected = std.mem.eql(u8, self.selected_tab_label, home_panel_tab_label);
+        var home_panel_tab: ?dvui.Rect = try dvui.tabBarItemLabel(@src(), home_panel_tab_label, .{ .selected = selected }, .{});
+        if (home_panel_tab != null) {
+            if (self.selected_tab != tabs.home_panel) {
+                self.selected_tab = tabs.home_panel;
+                self.selected_tab_label = home_panel_tab_label;
+            }
+        }
+
+        // The other panel tab.
+        selected = std.mem.eql(u8, self.selected_tab_label, other_panel_tab_label);
+        var other_panel_tab: ?dvui.Rect = try dvui.tabBarItemLabel(@src(), other_panel_tab_label, .{ .selected = selected }, .{});
+        if (other_panel_tab != null) {
+            if (self.selected_tab != tabs.other_panel) {
+                self.selected_tab = tabs.other_panel;
+                self.selected_tab_label = other_panel_tab_label;
+            }
+        }
+
+        // Get the max scroll position.
+        var least: f32 = 0.0;
+        var max: f32 = scrollArea.si.scroll_max(self: ScrollInfo, dir: Direction) f32
+
+        scrollArea.deinit();
+
+        [a, b, c, d, e, f]
+        max_count is 6
+            top is 2
+            middle is 2
+            bottom is 2
+
+        first fill is all 6
+        suffix is 2
+            [a, b, c, d, e, f] becomes [c, d, e, f, g, h]
+            lets say each item is 10pz tall
+            suffix
+
+        each section, top, middle, bottom is 2 elements.
