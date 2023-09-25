@@ -31,17 +31,18 @@ pub fn deinit() void {
 
 pub fn frame(arena: std.mem.Allocator) !void {
     // If set the zoom here then
+    // 1. there is no app menu. ( a horzontal menu )
     // 👍 the zoom works,
-    // 2. there is no app menu.
 
     // The main menu.
     try _main_menu_.frame(all_screens.?);
 
     // If set the zoom here then
-    // 👍 the zoom works,
-    // 2. except for the app menu, it has no zoom,
+    // 👍 the app menu works and as expected has no zoom,
     // 👍 the vertical tabs work correctly,
-    // 4. the horzontal tabs are not visible.
+    // 👍 the zoom works,
+    // 1. my horizontal tabs are not visible, ( a copy of the horizontal menu code )
+    // 👍 but the default tab's content is visible as expected.
 
     // set the zoom.
     const theme: *dvui.Theme = dvui.themeGet();
