@@ -26,9 +26,15 @@ pub fn build(b: *std.build.Builder) !void {
     });
 
     // shared modules.
+    const record_mod = b.addModule("record", .{
+        .source_file = .{ .path = "src/okp/shared/record/api.zig" },
+        .dependencies = &.{},
+    });
     const message_mod = b.addModule("message", .{
         .source_file = .{ .path = "src/okp/shared/message/api.zig" },
-        .dependencies = &.{},
+        .dependencies = &.{
+            .{ .name = "record", .module = record_mod },
+        },
     });
     const channel_mod = b.addModule("channel", .{
         .source_file = .{ .path = "src/okp/shared/channel/api.zig" },
@@ -67,6 +73,7 @@ pub fn build(b: *std.build.Builder) !void {
         exe.addModule("framers", framers_mod);
 
         // shared modules.
+        exe.addModule("record", record_mod);
         exe.addModule("message", message_mod);
         exe.addModule("channel", channel_mod);
         exe.linkLibrary(freetype_dep.artifact("freetype"));

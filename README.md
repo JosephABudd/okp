@@ -2,6 +2,10 @@
 
 One key piano.
 
+## Sep 25, 23
+
+1. Experimenting with zoom.
+
 ## Sep 17, 23
 
 1. Updated to the new version of dvui.

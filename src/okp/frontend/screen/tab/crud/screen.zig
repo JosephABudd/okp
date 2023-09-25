@@ -77,39 +77,43 @@ const Screen = struct {
             },
             .{ .expand = .horizontal, .color_style = .window },
         );
-        var tabbar = try dvui.horizontalTabBar(@src());
+        var tabbar = try dvui.tabBar(@src(), .horizontal, .{ .background = true, .expand = .none });
+        // var tabbar = try dvui.tabBar(@src(), .horizontal, .{ .background = true, .expand = .both });
         var selected: bool = false;
 
         // The simple screen tab.
         selected = std.mem.eql(u8, self.selected_tab_label, simple_screen_tab_label);
-        var simple_screen_tab: ?dvui.Rect = try dvui.horizontalTabBarItemLabel(@src(), simple_screen_tab_label, selected);
+        var simple_screen_tab: ?dvui.Rect = try dvui.tabBarItemLabel(@src(), simple_screen_tab_label, .{ .selected = selected }, .{});
         if (simple_screen_tab != null) {
             if (self.selected_tab != tabs.simple) {
                 self.selected_tab = tabs.simple;
                 self.selected_tab_label = simple_screen_tab_label;
             }
         }
+
         // The hard screen tab.
         selected = std.mem.eql(u8, self.selected_tab_label, hard_screen_tab_label);
-        var hard_screen_tab: ?dvui.Rect = try dvui.horizontalTabBarItemLabel(@src(), hard_screen_tab_label, selected);
+        var hard_screen_tab: ?dvui.Rect = try dvui.tabBarItemLabel(@src(), hard_screen_tab_label, .{ .selected = selected }, .{});
         if (hard_screen_tab != null) {
             if (self.selected_tab != tabs.hard) {
                 self.selected_tab = tabs.hard;
                 self.selected_tab_label = hard_screen_tab_label;
             }
         }
+
         // The home panel tab.
         selected = std.mem.eql(u8, self.selected_tab_label, home_panel_tab_label);
-        var home_panel_tab: ?dvui.Rect = try dvui.horizontalTabBarItemLabel(@src(), home_panel_tab_label, selected);
+        var home_panel_tab: ?dvui.Rect = try dvui.tabBarItemLabel(@src(), home_panel_tab_label, .{ .selected = selected }, .{});
         if (home_panel_tab != null) {
             if (self.selected_tab != tabs.home_panel) {
                 self.selected_tab = tabs.home_panel;
                 self.selected_tab_label = home_panel_tab_label;
             }
         }
+
         // The other panel tab.
         selected = std.mem.eql(u8, self.selected_tab_label, other_panel_tab_label);
-        var other_panel_tab: ?dvui.Rect = try dvui.horizontalTabBarItemLabel(@src(), other_panel_tab_label, selected);
+        var other_panel_tab: ?dvui.Rect = try dvui.tabBarItemLabel(@src(), other_panel_tab_label, .{ .selected = selected }, .{});
         if (other_panel_tab != null) {
             if (self.selected_tab != tabs.other_panel) {
                 self.selected_tab = tabs.other_panel;
@@ -118,6 +122,12 @@ const Screen = struct {
         }
         tabbar.deinit();
         scroll.deinit();
+
+        // if (scroll_max_count < 3) {
+        //     scroll_max = scroll.si.scroll_max(.horizontal);
+        //     scroll_max_count += 1;
+        // }
+        // std.debug.print("htabs max is {d}\n", .{max});
 
         // The content area for a tab's content.
 

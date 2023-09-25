@@ -1,5 +1,108 @@
-ScrollInfo.scroll_max(self: ScrollInfo, dir: Direction) f32
+STEPS:
+
+BUFFER:
+var initial_displayed_record_sorted_index: usize = 0;
+var buffer: []records.Contact = undefined;
+renderer: *Renderer = undefined
+
+/// affix sets the entire buffer to a copy of fix.
+fn affix(self: *Buffer, fix: []records.Contact) void
+
+/// prefix prefixes items allowing scrolling to top of list.
+/// called by messenger.
+fn prefix(self: *Buffer, before_sorted_index: usize, fix: []records.Contact) void
+/// called by messenger.
+/// - prepends fix to buffer.
+/// - if buffer len is too long then trims end of buffer.
+/// - calls renderer.prefix with record previous to before_sorted_index to renderer.
+
+/// - gets first visible item and the scroll offset from it's top.
+
+fn suffix(self: *Buffer, after_sorted_index: usize, fix: []records.Contact) void
+/// called by messenger.
+/// - appends fix to buffer.
+/// - if buffer len is too long then trims front of buffer.
+/// - calls renderer.prefix with record following to after_sorted_index to renderer.
+
+/// getAffix asynchronously requests a new list of records.
+fn getAffix(self: *Buffer, count: usize) void
+// The records are sent to renderer.affix
+
+/// getSuffix asynchronously requests a suffix record.
+fn getSuffix(self: *Buffer, after_sorted_index: usize) void
+// The record is sent to renderer.suffix
+
+/// getPrefix asynchronously requests a prefix record.
+fn getPrefix(self: *Buffer, before_sorted_index: usize) void
+// The record is sent to renderer.suffix
+
+
+RENDERER:
+var waiting_for_suffix: bool = false;
+var waiting_for_prefix: bool = false;
+
+fn affix(self: *Renderer, records: []*records.Contact)
+/// - rebuilds list using records.
+/// - sets the scroll position to the top.
+
+fn prefix(self: *Renderer, before_sorted_index, record: *records.Contact)
+/// - rebuilds the existing list, prefixed with a new item for the prefixed record.
+/// - sets the scroll position so it matches offset to first visible item.
+
+fn suffix(self: *Renderer, record: *records.Contact)
+/// - rebuilds the existing list, suffixed with a new item for the suffixed record.
+/// - sets the scroll position so it matches offset to first visible item.
+
+
+const records = @import("records");
+var initial_item_record_count: usize = 50;
+var number_items_displayed: usize = 0;
+
+1. 
+1. Wait for the viewport to reach max size.
+Each item is filled with blank lines.
+    name: " ";
+    note: "\n\n";
+
+ScrollInfo.scroll_max(self: ScrollInfo, dir: Direction, n_items: usize) f32
 returns the max scroll
+
+When the scroll area is finally sized to max size:
+
+minimum_items = 
+
+        var viewport_start = switch (dir) {
+            .vertical => self.viewport.y,
+            .horizontal => self.viewport.x,
+        };
+        var viewport_size = switch (dir) {
+            .vertical => self.viewport.h,
+            .horizontal => self.viewport.w,
+        };
+        var virtual_size = switch (dir) {
+            .vertical => self.virtual_size.h,
+            .horizontal => self.virtual_size.w,
+        };
+        var item_size: f32 = 0.0;
+        var first_visible_item_index: usize = 0;
+        var first_visible_item_offset: f32 = 0.0;
+        if (n_items > 0) {
+            item_size = virtual_size / @as(f32, n_items);
+            if (item_size > 0) {
+                first_visible_item_index =  @as(usize, (virtual-size / item_size));
+                first_visible_item_offset = @mod(viewport_start, item_size);
+            }
+        }
+
+
+
+Vertical List:
+    self.virtual_size.v is the length of the scrolled area.
+    v / n items = the size of each item in vertical list.
+
+Horizontal list.
+    self.virtual_size.h is the width of the scrolled area.
+    h / n items = the size of each item in horizontal list.
 
 ScrollAreaWidget.
     si: *ScrollInfo = undefined,

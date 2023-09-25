@@ -8,3 +8,4 @@ pub const fatal = @import("src/fatal.zig");
 
 pub const add = @import("src/add.zig");
 pub const edit = @import("src/edit.zig");
+pub const getContacts = @import("src/getContacts.zig");

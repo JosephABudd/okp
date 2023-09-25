@@ -67,14 +67,14 @@ const Screen = struct {
             );
             defer scroll.deinit();
 
-            var tabbar = try dvui.tabBar(@src(), .vertical, .{ .background = true, .expand = .vertical });
+            var tabbar = try dvui.verticalTabBar(@src());
             defer tabbar.deinit();
 
             var selected: bool = false;
 
             // The simple screen tab.
             selected = std.mem.eql(u8, self.selected_tab_label, simple_screen_tab_label);
-            var simple_screen_tab: ?dvui.Rect = try dvui.tabBarItemLabel(@src(), simple_screen_tab_label, .{ .selected = selected }, .{});
+            var simple_screen_tab: ?dvui.Rect = try dvui.verticalTabBarItemLabel(@src(), simple_screen_tab_label, selected);
             if (simple_screen_tab != null) {
                 if (self.selected_tab != tabs.simple) {
                     self.selected_tab = tabs.simple;
@@ -84,7 +84,7 @@ const Screen = struct {
 
             // The hard screen tab.
             selected = std.mem.eql(u8, self.selected_tab_label, hard_screen_tab_label);
-            var hard_screen_tab: ?dvui.Rect = try dvui.tabBarItemLabel(@src(), hard_screen_tab_label, .{ .selected = selected }, .{});
+            var hard_screen_tab: ?dvui.Rect = try dvui.verticalTabBarItemLabel(@src(), hard_screen_tab_label, selected);
             if (hard_screen_tab != null) {
                 if (self.selected_tab != tabs.hard) {
                     self.selected_tab = tabs.hard;
@@ -94,7 +94,7 @@ const Screen = struct {
 
             // The home panel tab.
             selected = std.mem.eql(u8, self.selected_tab_label, home_panel_tab_label);
-            var home_panel_tab: ?dvui.Rect = try dvui.tabBarItemLabel(@src(), home_panel_tab_label, .{ .selected = selected }, .{});
+            var home_panel_tab: ?dvui.Rect = try dvui.verticalTabBarItemLabel(@src(), home_panel_tab_label, selected);
             if (home_panel_tab != null) {
                 if (self.selected_tab != tabs.home_panel) {
                     self.selected_tab = tabs.home_panel;
@@ -104,7 +104,7 @@ const Screen = struct {
 
             // The other panel tab.
             selected = std.mem.eql(u8, self.selected_tab_label, other_panel_tab_label);
-            var other_panel_tab: ?dvui.Rect = try dvui.tabBarItemLabel(@src(), other_panel_tab_label, .{ .selected = selected }, .{});
+            var other_panel_tab: ?dvui.Rect = try dvui.verticalTabBarItemLabel(@src(), other_panel_tab_label, selected);
             if (other_panel_tab != null) {
                 if (self.selected_tab != tabs.other_panel) {
                     self.selected_tab = tabs.other_panel;

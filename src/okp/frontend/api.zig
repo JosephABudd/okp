@@ -1,4 +1,5 @@
 const std = @import("std");
+const dvui = @import("dvui");
 const _main_menu_ = @import("main_menu.zig");
 const _channel_ = @import("channel");
 const _framers_ = @import("framers");
@@ -29,8 +30,28 @@ pub fn deinit() void {
 }
 
 pub fn frame(arena: std.mem.Allocator) !void {
+    // If set the zoom here then
+    // 👍 the zoom works,
+    // 2. there is no app menu.
+
     // The main menu.
     try _main_menu_.frame(all_screens.?);
+
+    // If set the zoom here then
+    // 👍 the zoom works,
+    // 2. except for the app menu, it has no zoom,
+    // 👍 the vertical tabs work correctly,
+    // 4. the horzontal tabs are not visible.
+
+    // set the zoom.
+    const theme: *dvui.Theme = dvui.themeGet();
+    const font_body_size: f32 = theme.font_body.size;
+    const scale_val: f32 = @round(font_body_size * 2.0) / font_body_size;
+    var scaler = try dvui.scale(@src(), scale_val, .{ .expand = .both });
+    defer scaler.deinit();
+
     // Only frame visible screens and panels.
     try all_screens.?.frame(arena);
+
+    // If set the zoom here then obviously no zoom.
 }

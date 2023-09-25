@@ -10489,9 +10489,16 @@ pub const examples = struct {
 
 // Tab bar.
 
-pub fn tabBar(src: std.builtin.SourceLocation, dir: Direction, opts: Options) !*TabBarWidget {
+pub fn horizontalTabBar(src: std.builtin.SourceLocation) !*TabBarWidget {
     var ret = try currentWindow().arena.create(TabBarWidget);
-    ret.* = TabBarWidget.init(src, dir, opts);
+    ret.* = TabBarWidget.init(src, .horizontal, .{ .background = true, .expand = .none });
+    try ret.install(.{});
+    return ret;
+}
+
+pub fn verticalTabBar(src: std.builtin.SourceLocation) !*TabBarWidget {
+    var ret = try currentWindow().arena.create(TabBarWidget);
+    ret.* = TabBarWidget.init(src, .vertical, .{ .background = true, .expand = .none });
     try ret.install(.{});
     return ret;
 }
@@ -10601,7 +10608,15 @@ pub const TabBarWidget = struct {
     }
 };
 
-pub fn tabBarItemLabel(src: std.builtin.SourceLocation, label_str: []const u8, init_opts: TabBarItemWidget.InitOptions, opts: Options) !?Rect {
+pub fn verticalTabBarItemLabel(src: std.builtin.SourceLocation, label_str: []const u8, selected: bool) !?Rect {
+    return tabBarItemLabel(src, label_str, .{ .flow = .vertical, .selected = selected }, .{});
+}
+
+pub fn horizontalTabBarItemLabel(src: std.builtin.SourceLocation, label_str: []const u8, selected: bool) !?Rect {
+    return tabBarItemLabel(src, label_str, .{ .flow = .horizontal, .selected = selected }, .{});
+}
+
+fn tabBarItemLabel(src: std.builtin.SourceLocation, label_str: []const u8, init_opts: TabBarItemWidget.InitOptions, opts: Options) !?Rect {
     var tbi = try tabBarItem(src, init_opts, opts);
 
     var labelopts = opts.strip();
@@ -10612,7 +10627,22 @@ pub fn tabBarItemLabel(src: std.builtin.SourceLocation, label_str: []const u8, i
     }
 
     if (tbi.show_active) {
-        labelopts = labelopts.override(.{ .color_style = .accent });
+        if (tbi.init_opts.selected) {
+            switch (tbi.init_opts.flow) {
+                .horizontal => {
+                    labelopts = labelopts.override(.{
+                        .color_style = .accent,
+                        .font_style = .heading,
+                    });
+                },
+                .vertical => {
+                    labelopts = labelopts.override(.{
+                        .color_style = .accent,
+                        .font_style = .heading,
+                    });
+                },
+            }
+        }
     }
 
     try labelNoFmt(@src(), label_str, labelopts);
@@ -10643,7 +10673,7 @@ pub fn tabBarItemIcon(src: std.builtin.SourceLocation, name: []const u8, tvg_byt
     return ret;
 }
 
-pub fn tabBarItem(src: std.builtin.SourceLocation, init_opts: TabBarItemWidget.InitOptions, opts: Options) !*TabBarItemWidget {
+fn tabBarItem(src: std.builtin.SourceLocation, init_opts: TabBarItemWidget.InitOptions, opts: Options) !*TabBarItemWidget {
     var ret = try currentWindow().arena.create(TabBarItemWidget);
     ret.* = TabBarItemWidget.init(src, init_opts, opts);
     try ret.install(.{});
@@ -10652,16 +10682,34 @@ pub fn tabBarItem(src: std.builtin.SourceLocation, init_opts: TabBarItemWidget.I
 
 pub const TabBarItemWidget = struct {
     const Self = @This();
-    pub var defaults: Options = .{
+    pub var horizontal_defaults: Options = .{
         .color_style = .content,
-        .corner_radius = Rect.all(5),
-        .padding = Rect.all(4),
+        .corner_radius = .{ .x = 5, .y = 5, .w = 0, .h = 0 },
+        .padding = .{ .x = 4, .y = 4, .w = 4, .h = 4 },
+        .border = .{ .x = 1, .y = 1, .w = 1, .h = 1 },
+        .margin = .{ .x = 1, .y = 1, .w = 1, .h = 1 },
         .expand = .horizontal,
+        .font_style = .body,
+    };
+    pub var vertical_defaults: Options = .{
+        .color_style = .content,
+        .corner_radius = .{ .x = 0, .y = 5, .w = 5, .h = 0 },
+        .padding = .{ .x = 4, .y = 4, .w = 4, .h = 4 },
+        .border = .{ .x = 1, .y = 1, .w = 1, .h = 1 },
+        .margin = .{ .x = 1, .y = 1, .w = 4, .h = 1 },
+        .expand = .horizontal,
+        .font_style = .body,
+    };
+
+    pub const Flow = enum {
+        horizontal,
+        vertical,
     };
 
     pub const InitOptions = struct {
         selected: bool = false,
         focus_on_hover: bool = true,
+        flow: Flow = .horizontal,
     };
 
     wd: WidgetData = undefined,
@@ -10673,7 +10721,11 @@ pub const TabBarItemWidget = struct {
 
     pub fn init(src: std.builtin.SourceLocation, init_opts: InitOptions, opts: Options) Self {
         var self = Self{};
-        const options = defaults.override(opts);
+        const defaults: Options = switch (init_opts.flow) {
+            .horizontal => horizontal_defaults,
+            .vertical => vertical_defaults,
+        };
+        const options: Options = defaults.override(opts);
         self.wd = WidgetData.init(src, .{}, options);
         self.init_opts = init_opts;
         self.show_active = init_opts.selected;
