@@ -1,35 +1,71 @@
 # okp
 
-One key piano.
+**O**ne **K**ey **P**iano.
 
-## Sep 25, 23
+Learn to play a morse code straight key like a piano.
 
-1. Experimenting with zoom.
+## Intro
 
-## Sep 17, 23
+This version is being done with these tools which I really like.
 
-1. Updated to the new version of dvui.
+* [zig](https://ziglang.org/).
+* [dvui](https://github.com/david-vanderson/dvui). Dave Vanderson's graphics framework for zig.
+* [sqlite-zig](https://github.com/leroycep/sqlite-zig.git). LeRoyce Pearson's sqlite package for zig.
+* [kickzig](https://github.com/JosephABudd/kickzig).
 
-## Sep 15, 23
+But before I can do that I need an audio package for the metronome clicks and for the key tone. So I'm looking into that right now.
 
-1. Added the vertical tab bar screen. So now there is a horizontal tab bar screen and a verticl tab bar screen.
+## The Plan
 
-## Sep 12, 23
+### 1. Courses
 
-1. Added the dvui source code so I can play with it. I'm embarassed to say how long it took me to figure out how to do it. It was too easy.
+In **Courses** one can
 
-## Aug 29, 23
+* View a description of the current course and select a different current course.
+* Create a new course.
+* Edit an existing course.
+* Remove an existing course.
 
-1. I reloaded this repo with the working code after I mucked it all up.
+#### A course has
 
-## Aug 18, 23
+* A name.
+* A description.
+* One of the various lesson plans. A lesson plan is series of lessons. A lesson presents the character, word or sentence that one must learn to copy and key.
+* One of the various speeds for keying and copying.
 
-I've learned how to do call backs from the team over at [zig's discord group](https://discord.com/channels/605571803288698900/1019652020308824145/threads/1118834617240264704) so I'm attempting my own implementations.
+### 2. Training
 
-I've just started learning more about dvui from David Vanderson.
+In **Training** one learns the current course one lesson at a time. In a lesson one pratices as long as desired and then tests.
 
-## Aug 12, 23
+#### Copying
 
-I'm putting this app together using zig and dvui.
+##### Copy Practice
 
-This is a chance for me to learn zig and explore the possibilities with [dvui](https://github.com/david-vanderson/dvui).
+* The morse code is keyed by the app.
+* Correct copies don't count toward anything. Incorrect copies don't count against anything.
+
+##### Copy Test
+
+* The morse code is keyed by the app.
+* Correct copy attempts accumulate until the required amount of correct copy attempts is reached.
+* Incorrect copy attempts have no effect on the accumulated correct copy attempts.
+
+#### Keying
+
+##### Key Practice
+
+* The text to be keyed is displayed.
+* The keying instructions are displayed.
+* The app's metronome can be turned on to keep time.
+* When the metronome is turned off the key sounds in the app. The key has a subtle beat to help keep time. Hold the key down for 1 beat for a dit. Hold the key down for 3 beats for a dah.
+* Correct key attempts don't count toward anything.
+* Incorrect key attempts don't count against anything.
+
+##### Key Test
+
+* The text to be keyed is displayed.
+* The keying instructions are not displayed.
+* The app's metronome can not be turned on to keep time.
+* The key sounds in the app. The key has a subtle beat to help keep time. Hold the key down for 1 beat for a dit. Hold the key down for 3 beats for a dah.
+* Correct key attempts accumulate until the required amount of correct key attempts is reached.
+* Incorrect key attempts have no effect on the accumulated correct key attempts.

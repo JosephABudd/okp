@@ -1,4 +1,6 @@
-zig-cache
-zig-out
-*.swp
-working
+zig-cache/
+zig-out/
+vendor/
+*.sh
+*.txt
+
